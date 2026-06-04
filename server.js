@@ -4,6 +4,7 @@ import "./worker.js";
 /* ================= IMPORTS ================= */
 import express from "express";
 import cors from "cors";
+import path from "path";
 
 import redis from "./redis.js";
 import ticketQueue from "./queue.js";
@@ -15,6 +16,9 @@ import { sendWhatsApp } from "./whatsapp.js";
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+/* ================= FIX: SERVE UPLOADS ================= */
+app.use("/uploads", express.static("uploads"));
 
 /* ================= GLOBAL STATE ================= */
 if (!global.feedbackActive) global.feedbackActive = {};
@@ -85,7 +89,7 @@ app.get("/tickets", auth, async (req, res) => {
         location,
         upi_id,
         image,
-        upi_image,   -- ✅ FIX: ADDED THIS LINE
+        upi_image,
         status,
         state,
         created_at,
@@ -95,7 +99,23 @@ app.get("/tickets", auth, async (req, res) => {
       ORDER BY id DESC
     `);
 
-    res.json(result.rows);
+    /* ================= FIX: IMAGE URLS ================= */
+    const rows = result.rows.map((t) => ({
+      ...t,
+      image: t.image
+        ? t.image.startsWith("http")
+          ? t.image
+          : `https://whatsapp-bot-1x9v.onrender.com/${t.image}`
+        : null,
+
+      upi_image: t.upi_image
+        ? t.upi_image.startsWith("http")
+          ? t.upi_image
+          : `https://whatsapp-bot-1x9v.onrender.com/${t.upi_image}`
+        : null,
+    }));
+
+    res.json(rows);
   } catch (err) {
     console.log("FETCH ERROR:", err.message);
     res.status(500).json({ error: "Server error" });
@@ -226,7 +246,7 @@ app.delete("/tickets/:id", auth, async (req, res) => {
 });
 
 /* =========================================================
-   🔗 WEBHOOK VERIFY (UPDATED)
+   🔗 WEBHOOK VERIFY
 ========================================================= */
 app.get("/webhook", (req, res) => {
   const mode = req.query["hub.mode"];
@@ -243,7 +263,7 @@ app.get("/webhook", (req, res) => {
 });
 
 /* =========================================================
-   📩 WEBHOOK RECEIVE (UPDATED)
+   📩 WEBHOOK RECEIVE
 ========================================================= */
 app.post("/webhook", async (req, res) => {
   try {
@@ -295,7 +315,7 @@ app.get("/", (req, res) => {
 });
 
 /* =========================================================
-   🚀 START SERVER (UPDATED)
+   🚀 START SERVER
 ========================================================= */
 const PORT = process.env.PORT || 3000;
 
