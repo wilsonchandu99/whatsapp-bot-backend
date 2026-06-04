@@ -33,19 +33,16 @@ function cleanText(text) {
   return (text || "").trim().toLowerCase();
 }
 
-/* ================= MEDIA (FIXED SAFE MODE) ================= */
+/* ================= MEDIA ================= */
 function extractMedia(jobData) {
   return {
     isImage: jobData?.isImage || false,
-
-    // 🔥 FIX: fallback safe handling (NO BREAK FLOW)
     mediaUrl:
       jobData?.mediaUrl ||
       jobData?.url ||
       jobData?.image ||
       jobData?.file ||
       null,
-
     mediaType: jobData?.mediaType || null,
   };
 }
@@ -55,7 +52,7 @@ async function sendWhatsApp(to, message) {
   try {
     const cleanNumber = (to || "").replace(/\D/g, "");
 
-    await axios.post(
+    const res = await axios.post(
       `https://graph.facebook.com/v19.0/${process.env.PHONE_NUMBER_ID}/messages`,
       {
         messaging_product: "whatsapp",
@@ -70,8 +67,12 @@ async function sendWhatsApp(to, message) {
         },
       }
     );
+
+    console.log("✅ WhatsApp sent");
+    return res.data;
   } catch (err) {
-    console.log("WhatsApp Error:", err.response?.data || err.message);
+    console.log("❌ WhatsApp Error:", err.response?.data || err.message);
+    return null;
   }
 }
 
@@ -95,15 +96,12 @@ async function updateTicket(id, fields) {
 const worker = new Worker(
   "ticketQueue",
   async (job) => {
-    console.log("🔥 JOB RECEIVED:", job.data); // ✅ IMPORTANT FIX
+    console.log("🔥 JOB RECEIVED:", job.data);
 
     try {
       const { ticketId, from, text } = job.data || {};
 
-      if (!ticketId || !from) {
-        console.log("❌ Invalid job data:", job.data);
-        return;
-      }
+      if (!ticketId || !from) return;
 
       const { isImage, mediaUrl } = extractMedia(job.data);
 
@@ -122,7 +120,7 @@ const worker = new Worker(
       if (!category) {
         await updateTicket(ticketId, { category: "MENU" });
 
-        return sendWhatsApp(
+        await sendWhatsApp(
           from,
           `👋 Welcome
 
@@ -130,13 +128,14 @@ const worker = new Worker(
 2️⃣ Product  
 3️⃣ Feedback`
         );
+        return;
       }
 
       if (category === "MENU") {
         if (message === "1") {
           await updateTicket(ticketId, { category: "REFUND", state: "MAIN" });
 
-          return sendWhatsApp(from,
+          await sendWhatsApp(from,
             `Refund options:
 
 1 Product not dispensed  
@@ -144,26 +143,30 @@ const worker = new Worker(
 3 Wrong price  
 4 Damaged`
           );
+          return;
         }
 
         if (message === "2") {
           await updateTicket(ticketId, { category: "PRODUCT", state: "OPTIONS" });
 
-          return sendWhatsApp(from,
+          await sendWhatsApp(from,
             `Product options:
 
 1 Brand Enquiry  
 2 New Product Collaboration`
           );
+          return;
         }
 
         if (message === "3") {
           await updateTicket(ticketId, { category: "FEEDBACK", state: "RATING" });
 
-          return sendWhatsApp(from, "⭐ Please rate your experience (1 to 5)");
+          await sendWhatsApp(from, "⭐ Please rate your experience (1 to 5)");
+          return;
         }
 
-        return sendWhatsApp(from, "Reply 1, 2 or 3");
+        await sendWhatsApp(from, "Reply 1, 2 or 3");
+        return;
       }
 
       /* ================= PRODUCT ================= */
@@ -178,13 +181,14 @@ const worker = new Worker(
 
             await updateTicket(ticketId, { state: "DONE", status: "done" });
 
-            return sendWhatsApp(from,
+            await sendWhatsApp(from,
               `🏢 About Snackit:
 
 Snackit operates smart vending machines.
 
 📩 snackit.support@gmail.com`
             );
+            return;
           }
 
           if (message === "2") {
@@ -196,14 +200,16 @@ Snackit operates smart vending machines.
 
             await updateTicket(ticketId, { state: "DONE", status: "done" });
 
-            return sendWhatsApp(from,
+            await sendWhatsApp(from,
               `🤝 Collaboration accepted.
 
 📩 snackit.support@gmail.com`
             );
+            return;
           }
 
-          return sendWhatsApp(from, "Reply 1 or 2");
+          await sendWhatsApp(from, "Reply 1 or 2");
+          return;
         }
       }
 
@@ -220,7 +226,8 @@ Snackit operates smart vending machines.
             rating
           });
 
-          return sendWhatsApp(from, "📝 Enter your feedback");
+          await sendWhatsApp(from, "📝 Enter your feedback");
+          return;
         }
 
         if (state === "COMMENT") {
@@ -232,7 +239,8 @@ Snackit operates smart vending machines.
 
           await updateTicket(ticketId, { state: "DONE", status: "done" });
 
-          return sendWhatsApp(from, "🙏 Thank you!");
+          await sendWhatsApp(from, "🙏 Thank you!");
+          return;
         }
       }
 
@@ -258,7 +266,8 @@ Snackit operates smart vending machines.
             state: "LOCATION",
           });
 
-          return sendWhatsApp(from, "Enter machine location");
+          await sendWhatsApp(from, "Enter machine location");
+          return;
         }
 
         if (state === "LOCATION") {
@@ -275,10 +284,13 @@ Snackit operates smart vending machines.
             state: "STEP1",
           });
 
-          if (subIssue === "Product not dispensed")
-            return sendWhatsApp(from, "Send product stuck image");
+          if (subIssue === "Product not dispensed") {
+            await sendWhatsApp(from, "Send product stuck image");
+            return;
+          }
 
-          return sendWhatsApp(from, "Enter UPI ID");
+          await sendWhatsApp(from, "Enter UPI ID");
+          return;
         }
 
         if (subIssue === "Product not dispensed") {
@@ -292,7 +304,8 @@ Snackit operates smart vending machines.
             }
 
             await updateTicket(ticketId, { state: "STEP2" });
-            return sendWhatsApp(from, "Enter UPI ID");
+            await sendWhatsApp(from, "Enter UPI ID");
+            return;
           }
 
           if (state === "STEP2") {
@@ -301,7 +314,8 @@ Snackit operates smart vending machines.
               state: "STEP3",
             });
 
-            return sendWhatsApp(from, "Send UPI screenshot");
+            await sendWhatsApp(from, "Send UPI screenshot");
+            return;
           }
 
           if (state === "STEP3") {
@@ -313,7 +327,8 @@ Snackit operates smart vending machines.
             }
 
             await updateTicket(ticketId, { state: "DONE" });
-            return sendWhatsApp(from, "✅ Done");
+            await sendWhatsApp(from, "✅ Done");
+            return;
           }
         }
       }
