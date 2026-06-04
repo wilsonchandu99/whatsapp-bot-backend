@@ -2,17 +2,9 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import { Worker } from "bullmq";
-import IORedis from "ioredis";
+import connection from "./redis.js";   // ✅ UPDATED (was IORedis)
 import axios from "axios";
 import db from "./db.js";
-
-/* ================= REDIS ================= */
-const connection = new IORedis({
-  host: process.env.REDIS_HOST || "127.0.0.1",
-  port: Number(process.env.REDIS_PORT || 6379),
-  maxRetriesPerRequest: null,
-  enableReadyCheck: false
-});
 
 /* ================= HELPERS ================= */
 function cleanText(text) {
@@ -21,7 +13,6 @@ function cleanText(text) {
 
 /* ================= MEDIA PLACEHOLDER (READY FOR CLOUDINARY) ================= */
 function extractMedia(jobData) {
-  // You can later map Cloudinary URL here
   return {
     isImage: jobData.isImage || false,
     mediaUrl: jobData.mediaUrl || null,
@@ -269,7 +260,6 @@ We onboard new products into our vending network.
 
         if (state === "LOCATION") {
 
-          // 💡 STORE MEDIA (UPI or PROOF IMAGE)
           if (isImage && mediaUrl) {
             await updateTicket(ticketId, {
               image: mediaUrl
@@ -359,7 +349,7 @@ We onboard new products into our vending network.
       console.log("Worker Error:", err.message);
     }
   },
-  { connection }
+  { connection }   // ✅ uses shared Redis
 );
 
 console.log("✅ Worker running...");
