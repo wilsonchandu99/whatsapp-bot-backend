@@ -225,17 +225,24 @@ app.delete("/tickets/:id", auth, async (req, res) => {
 });
 
 /* =========================================================
-   🔗 WEBHOOK VERIFY
+   🔗 WEBHOOK VERIFY (UPDATED)
 ========================================================= */
 app.get("/webhook", (req, res) => {
-  if (req.query["hub.verify_token"] === process.env.VERIFY_TOKEN) {
-    return res.send(req.query["hub.challenge"]);
+  const mode = req.query["hub.mode"];
+  const token = req.query["hub.verify_token"];
+  const challenge = req.query["hub.challenge"];
+
+  if (mode === "subscribe" && token === process.env.VERIFY_TOKEN) {
+    console.log("✅ Webhook verified");
+    return res.status(200).send(challenge);
   }
+
+  console.log("❌ Webhook verification failed");
   res.sendStatus(403);
 });
 
 /* =========================================================
-   📩 WEBHOOK RECEIVE
+   📩 WEBHOOK RECEIVE (UPDATED)
 ========================================================= */
 app.post("/webhook", async (req, res) => {
   try {
@@ -260,6 +267,8 @@ app.post("/webhook", async (req, res) => {
       isImage = true;
     }
 
+    console.log("📩 Incoming:", { from, text, type });
+
     const ticket = await getOrCreateTicket(from);
 
     await ticketQueue.add("process", {
@@ -272,7 +281,7 @@ app.post("/webhook", async (req, res) => {
 
     res.sendStatus(200);
   } catch (err) {
-    console.log("WEBHOOK ERROR:", err.message);
+    console.log("❌ WEBHOOK ERROR:", err.message);
     res.sendStatus(200);
   }
 });
