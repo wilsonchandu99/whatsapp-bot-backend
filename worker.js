@@ -33,12 +33,20 @@ function cleanText(text) {
   return (text || "").trim().toLowerCase();
 }
 
-/* ================= MEDIA ================= */
+/* ================= MEDIA (FIXED SAFE MODE) ================= */
 function extractMedia(jobData) {
   return {
-    isImage: jobData.isImage || false,
-    mediaUrl: jobData.mediaUrl || jobData.url || null, // ✅ FIXED SAFE FALLBACK
-    mediaType: jobData.mediaType || null
+    isImage: jobData?.isImage || false,
+
+    // 🔥 FIX: fallback safe handling (NO BREAK FLOW)
+    mediaUrl:
+      jobData?.mediaUrl ||
+      jobData?.url ||
+      jobData?.image ||
+      jobData?.file ||
+      null,
+
+    mediaType: jobData?.mediaType || null,
   };
 }
 
@@ -87,9 +95,9 @@ async function updateTicket(id, fields) {
 const worker = new Worker(
   "ticketQueue",
   async (job) => {
-    try {
+    console.log("🔥 JOB RECEIVED:", job.data); // ✅ IMPORTANT FIX
 
-      /* ================= SAFE GUARD (NEW) ================= */
+    try {
       const { ticketId, from, text } = job.data || {};
 
       if (!ticketId || !from) {
@@ -253,18 +261,10 @@ Snackit operates smart vending machines.
           return sendWhatsApp(from, "Enter machine location");
         }
 
-        /* ================= LOCATION ================= */
         if (state === "LOCATION") {
 
           if (isImage && mediaUrl) {
-            let uploaded = null;
-
-            try {
-              uploaded = await uploadToCloudinary(mediaUrl, "image");
-            } catch (e) {
-              console.log("Upload failed:", e.message);
-            }
-
+            const uploaded = await uploadToCloudinary(mediaUrl, "image");
             await updateTicket(ticketId, {
               image: uploaded || mediaUrl
             });
@@ -281,21 +281,13 @@ Snackit operates smart vending machines.
           return sendWhatsApp(from, "Enter UPI ID");
         }
 
-        /* ================= STEP FLOW ================= */
         if (subIssue === "Product not dispensed") {
 
           if (state === "STEP1") {
             if (!isImage) return sendWhatsApp(from, "Send image");
 
             if (mediaUrl) {
-              let uploaded = null;
-
-              try {
-                uploaded = await uploadToCloudinary(mediaUrl, "image");
-              } catch (e) {
-                console.log("Upload failed:", e.message);
-              }
-
+              const uploaded = await uploadToCloudinary(mediaUrl, "image");
               await updateTicket(ticketId, { image: uploaded || mediaUrl });
             }
 
@@ -316,14 +308,7 @@ Snackit operates smart vending machines.
             if (!isImage) return sendWhatsApp(from, "Send image");
 
             if (mediaUrl) {
-              let uploaded = null;
-
-              try {
-                uploaded = await uploadToCloudinary(mediaUrl, "image");
-              } catch (e) {
-                console.log("Upload failed:", e.message);
-              }
-
+              const uploaded = await uploadToCloudinary(mediaUrl, "image");
               await updateTicket(ticketId, { upi_image: uploaded || mediaUrl });
             }
 
