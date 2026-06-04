@@ -1,4 +1,5 @@
 import "dotenv/config";
+import "./worker.js";
 
 /* ================= IMPORTS ================= */
 import express from "express";
