@@ -204,36 +204,49 @@ How can we help you today?
             return sendWhatsApp(from, "Send product image");
           }
 
+          // ✅ FIXED STEP1
           if (state === "STEP1") {
-            if (isImage && mediaUrl) {
-              const uploaded = await uploadToCloudinary(mediaUrl);
-              await updateTicket(ticketId, {
-                image: uploaded || mediaUrl,
-                state: "STEP2",
-              });
+            if (!isImage || !mediaUrl) {
+              return sendWhatsApp(from, "Please send product image");
             }
+
+            const uploaded = await uploadToCloudinary(mediaUrl);
+
+            await updateTicket(ticketId, {
+              image: uploaded || mediaUrl,
+              state: "STEP2",
+            });
+
             return sendWhatsApp(from, "Enter your UPI Transaction ID please ");
           }
 
+          // ✅ FIXED STEP2
           if (state === "STEP2") {
+            if (!text || text.trim() === "") {
+              return sendWhatsApp(from, "Enter your UPI Transaction ID please ");
+            }
+
             await updateTicket(ticketId, {
-              upi_id: text,
+              upi_id: text.trim(),
               state: "STEP3",
             });
 
             return sendWhatsApp(from, "Send your UPI Transaction image please");
           }
 
+          // ✅ FIXED STEP3
           if (state === "STEP3") {
-            if (isImage && mediaUrl) {
-              const uploaded = await uploadToCloudinary(mediaUrl);
-              await updateTicket(ticketId, {
-                upi_image: uploaded || mediaUrl,
-                state: "DONE",
-              });
+            if (!isImage || !mediaUrl) {
+              return sendWhatsApp(from, "Please send UPI transaction image");
             }
 
-            await updateTicket(ticketId, { state: "DONE" });
+            const uploaded = await uploadToCloudinary(mediaUrl);
+
+            await updateTicket(ticketId, {
+              upi_image: uploaded || mediaUrl,
+              state: "DONE",
+            });
+
             return sendWhatsApp(from, FINAL_MSG);
           }
         }
