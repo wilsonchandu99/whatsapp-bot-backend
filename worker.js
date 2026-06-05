@@ -117,15 +117,13 @@ const worker = new Worker(
       let category = ticket.category;
       let subIssue = ticket.sub_issue;
 
-      /* ================= FIX 1: FIRST MESSAGE POLITE GREETING ================= */
+      /* ================= MENU ================= */
       if (!category) {
         await updateTicket(ticketId, { category: "MENU" });
 
         return sendWhatsApp(
           from,
-          `👋 Welcome to Snackit!
-
-How can I help you today?
+          `👋 Welcome
 
 1️⃣ Refund  
 2️⃣ Product  
@@ -133,13 +131,11 @@ How can I help you today?
         );
       }
 
-      /* ================= MENU ================= */
       if (category === "MENU") {
         if (message === "1") {
           await updateTicket(ticketId, { category: "REFUND", state: "MAIN" });
 
-          return sendWhatsApp(
-            from,
+          return sendWhatsApp(from,
             `Refund options:
 
 1 Product not dispensed  
@@ -181,13 +177,7 @@ How can I help you today?
 
             await updateTicket(ticketId, { state: "DONE", status: "done" });
 
-            return sendWhatsApp(
-              from,
-              `🏢 Thank you for your interest.
-
-We have received your brand enquiry.
-Our team will contact you soon.`
-            );
+            return sendWhatsApp(from, `🏢 About Snackit...`);
           }
 
           if (message === "2") {
@@ -199,13 +189,7 @@ Our team will contact you soon.`
 
             await updateTicket(ticketId, { state: "DONE", status: "done" });
 
-            return sendWhatsApp(
-              from,
-              `🤝 Thank you!
-
-Your collaboration request has been submitted.
-We will get back to you shortly.`
-            );
+            return sendWhatsApp(from, `🤝 Collaboration accepted.`);
           }
 
           return sendWhatsApp(from, "Reply 1 or 2");
@@ -237,10 +221,7 @@ We will get back to you shortly.`
 
           await updateTicket(ticketId, { state: "DONE", status: "done" });
 
-          return sendWhatsApp(
-            from,
-            "🙏 Thank you for your feedback! We appreciate your time."
-          );
+          return sendWhatsApp(from, "🙏 Thank you!");
         }
       }
 
@@ -287,18 +268,45 @@ We will get back to you shortly.`
           return sendWhatsApp(from, "Enter UPI ID");
         }
 
+        /* ================= 🔥 FIX ADDED HERE ================= */
+        if (state === "STEP1" && subIssue !== "Product not dispensed") {
+          await updateTicket(ticketId, {
+            upi_id: text,
+            state: "STEP2",
+          });
+
+          return sendWhatsApp(from, "Send UPI screenshot");
+        }
+
+        if (state === "STEP2" && subIssue !== "Product not dispensed") {
+          if (!isImage) return sendWhatsApp(from, "Send UPI screenshot image");
+
+          const uploaded = await uploadToCloudinary(mediaUrl, "image");
+
+          await updateTicket(ticketId, {
+            upi_image: uploaded || mediaUrl,
+            state: "DONE",
+            status: "done",
+          });
+
+          return sendWhatsApp(
+            from,
+            "✅ Ticket has been raised successfully.\nWe will process your refund soon."
+          );
+        }
+
+        /* ================= SPECIAL FLOW ================= */
         if (subIssue === "Product not dispensed") {
           if (state === "STEP1") {
             if (!isImage) return sendWhatsApp(from, "Send image");
 
-            if (mediaUrl) {
-              const uploaded = await uploadToCloudinary(mediaUrl, "image");
-              await updateTicket(ticketId, {
-                image: uploaded || mediaUrl,
-              });
-            }
+            const uploaded = await uploadToCloudinary(mediaUrl, "image");
 
-            await updateTicket(ticketId, { state: "STEP2" });
+            await updateTicket(ticketId, {
+              image: uploaded || mediaUrl,
+              state: "STEP2",
+            });
+
             return sendWhatsApp(from, "Enter UPI ID");
           }
 
@@ -314,25 +322,22 @@ We will get back to you shortly.`
           if (state === "STEP3") {
             if (!isImage) return sendWhatsApp(from, "Send image");
 
-            if (mediaUrl) {
-              const uploaded = await uploadToCloudinary(mediaUrl, "image");
-              await updateTicket(ticketId, {
-                upi_image: uploaded || mediaUrl,
-              });
-            }
+            const uploaded = await uploadToCloudinary(mediaUrl, "image");
 
             await updateTicket(ticketId, {
+              upi_image: uploaded || mediaUrl,
               state: "DONE",
               status: "done",
             });
 
             return sendWhatsApp(
               from,
-              "✅ Ticket has been raised successfully.\n\nOur team will process your request soon."
+              "✅ Ticket has been raised successfully.\nWe will process your refund soon."
             );
           }
         }
       }
+
     } catch (err) {
       console.log("Worker Error:", err.message);
     }
