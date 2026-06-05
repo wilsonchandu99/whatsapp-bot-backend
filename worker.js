@@ -149,12 +149,12 @@ const worker = new Worker(
 
         return sendWhatsApp(
           from,
-          `ðŸ‘‹ Welcome to Snackit!
+          `🤝 𝓦𝓮𝓵𝓬𝓸𝓂𝓮 TO SNACKIT!
 How can we help you today?
 
 1️⃣ Refund  
-2ï¸âƒ£ Product  
-3ï¸âƒ£ Feedback`
+2️⃣ Product  
+3️⃣ Feedback`
         );
       }
 
@@ -191,7 +191,7 @@ How can we help you today?
             state: "RATING",
           });
 
-          return sendWhatsApp(from, "â­ Rate us 1-5");
+          return sendWhatsApp(from, "🌟 Rate us 1-5");
         }
 
         return sendWhatsApp(from, "Reply 1, 2 or 3");
@@ -453,7 +453,7 @@ How can we help you today?
       if (category === "FEEDBACK") {
         if (state === "RATING") {
           if (!["1", "2", "3", "4", "5"].includes(message)) {
-            return sendWhatsApp(from, "Rate us 1-5");
+            return sendWhatsApp(from, "🌟 Rate us 1-5");
           }
 
           if (!global.feedbackActive) global.feedbackActive = {};
@@ -494,4 +494,4 @@ How can we help you today?
   { connection }
 );
 
-console.log("âœ… Worker running...");
+console.log("Worker running...");
