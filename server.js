@@ -5,6 +5,7 @@ import "./worker.js";
 import express from "express";
 import cors from "cors";
 import path from "path";
+import axios from "axios";
 
 import redis from "./redis.js";
 import ticketQueue from "./queue.js";
@@ -279,6 +280,8 @@ app.post("/webhook", async (req, res) => {
 
     let text = "";
     let isImage = false;
+    let mediaUrl = null;
+    let mediaType = null;
 
     if (type === "text") {
       text = msg.text?.body || "";
@@ -286,9 +289,29 @@ app.post("/webhook", async (req, res) => {
 
     if (type === "image" || type === "video") {
       isImage = true;
+      mediaType = type;
+
+      const mediaId = type === "image" ? msg.image?.id : msg.video?.id;
+
+      if (mediaId) {
+        try {
+          const mediaRes = await axios.get(
+            `https://graph.facebook.com/v19.0/${mediaId}`,
+            {
+              headers: {
+                Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
+              },
+            }
+          );
+
+          mediaUrl = mediaRes.data?.url || null;
+        } catch (err) {
+          console.log("MEDIA URL ERROR:", err.response?.data || err.message);
+        }
+      }
     }
 
-    console.log("📩 Incoming:", { from, text, type });
+    console.log("📩 Incoming:", { from, text, type, isImage, mediaUrl });
 
     const ticket = await getOrCreateTicket(from);
 
@@ -297,6 +320,8 @@ app.post("/webhook", async (req, res) => {
       from,
       text,
       isImage,
+      mediaUrl,
+      mediaType,
       timestamp: Number(msg.timestamp || Date.now()),
     });
 
