@@ -122,7 +122,7 @@ const FINAL_MSG =
 const worker = new Worker(
   "ticketQueue",
   async (job) => {
-    console.log("🔥 JOB RECEIVED:", job.data);
+    console.log("ðŸ”¥ JOB RECEIVED:", job.data);
 
     try {
       const { ticketId, from, text } = job.data || {};
@@ -149,12 +149,12 @@ const worker = new Worker(
 
         return sendWhatsApp(
           from,
-          `👋 Welcome to Snackit!
+          `ðŸ‘‹ Welcome to Snackit!
 How can we help you today?
 
-1️⃣ Refund  
-2️⃣ Product  
-3️⃣ Feedback`
+1ï¸âƒ£ Refund  
+2ï¸âƒ£ Product  
+3ï¸âƒ£ Feedback`
         );
       }
 
@@ -191,7 +191,7 @@ How can we help you today?
             state: "RATING",
           });
 
-          return sendWhatsApp(from, "⭐ Rate us 1-5");
+          return sendWhatsApp(from, "â­ Rate us 1-5");
         }
 
         return sendWhatsApp(from, "Reply 1, 2 or 3");
@@ -403,6 +403,87 @@ How can we help you today?
           }
         }
       }
+
+      /* ================= PRODUCT ================= */
+      if (category === "PRODUCT") {
+        if (state === "OPTIONS") {
+          if (message === "1") {
+            await db.query(
+              "INSERT INTO product_leads (phone, type) VALUES ($1, $2)",
+              [from, "Brand Enquiry"]
+            );
+
+            await updateTicket(ticketId, {
+              main_issue: "Product",
+              sub_issue: "Brand Enquiry",
+              state: "DONE",
+            });
+
+            return sendWhatsApp(
+              from,
+              "Thank you. Your brand enquiry has been received. Our team will contact you soon."
+            );
+          }
+
+          if (message === "2") {
+            await db.query(
+              "INSERT INTO product_leads (phone, type) VALUES ($1, $2)",
+              [from, "Collaboration"]
+            );
+
+            await updateTicket(ticketId, {
+              main_issue: "Product",
+              sub_issue: "Collaboration",
+              state: "DONE",
+            });
+
+            return sendWhatsApp(
+              from,
+              "Thank you. Your collaboration request has been received. Our team will contact you soon."
+            );
+          }
+
+          return sendWhatsApp(from, "Choose 1 or 2");
+        }
+      }
+
+      /* ================= FEEDBACK ================= */
+      if (category === "FEEDBACK") {
+        if (state === "RATING") {
+          if (!["1", "2", "3", "4", "5"].includes(message)) {
+            return sendWhatsApp(from, "Rate us 1-5");
+          }
+
+          if (!global.feedbackActive) global.feedbackActive = {};
+          global.feedbackActive[from] = message;
+
+          await updateTicket(ticketId, {
+            main_issue: "Feedback",
+            state: "COMMENT",
+          });
+
+          return sendWhatsApp(from, "Please share your feedback");
+        }
+
+        if (state === "COMMENT") {
+          const rating = global.feedbackActive?.[from] || null;
+
+          await db.query(
+            "INSERT INTO feedback (phone, rating, comment) VALUES ($1, $2, $3)",
+            [from, rating, text || ""]
+          );
+
+          if (global.feedbackActive) {
+            delete global.feedbackActive[from];
+          }
+
+          await updateTicket(ticketId, {
+            state: "DONE",
+          });
+
+          return sendWhatsApp(from, "Thank you for your feedback.");
+        }
+      }
     } catch (err) {
       console.log("Worker Error:", err.message);
     }
@@ -410,4 +491,4 @@ How can we help you today?
   { connection }
 );
 
-console.log("✅ Worker running...");
+console.log("âœ… Worker running...");
