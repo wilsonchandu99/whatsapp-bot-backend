@@ -197,7 +197,10 @@ How can we help you today?
         /* ================= PRODUCT NOT DISPENSED ================= */
         if (subIssue === "Product not dispensed") {
           if (state === "LOCATION") {
-            await updateTicket(ticketId, { location: text, state: "STEP1" });
+            await updateTicket(ticketId, {
+              location: text,
+              state: "STEP1",
+            });
             return sendWhatsApp(from, "Send product image");
           }
 
@@ -243,9 +246,7 @@ How can we help you today?
           }
 
           if (state === "EXP_IMG") {
-            const uploaded = isImage
-              ? await uploadToCloudinary(mediaUrl)
-              : null;
+            const uploaded = isImage && mediaUrl ? await uploadToCloudinary(mediaUrl) : null;
 
             await updateTicket(ticketId, {
               image: uploaded || mediaUrl,
@@ -265,9 +266,7 @@ How can we help you today?
           }
 
           if (state === "EXP_UPI_IMG") {
-            const uploaded = isImage
-              ? await uploadToCloudinary(mediaUrl)
-              : null;
+            const uploaded = isImage && mediaUrl ? await uploadToCloudinary(mediaUrl) : null;
 
             await updateTicket(ticketId, {
               upi_image: uploaded || mediaUrl,
@@ -286,9 +285,7 @@ How can we help you today?
           }
 
           if (state === "PRICE_IMG") {
-            const uploaded = isImage
-              ? await uploadToCloudinary(mediaUrl)
-              : null;
+            const uploaded = isImage && mediaUrl ? await uploadToCloudinary(mediaUrl) : null;
 
             await updateTicket(ticketId, {
               image: uploaded || mediaUrl,
@@ -308,9 +305,7 @@ How can we help you today?
           }
 
           if (state === "PRICE_UPI_IMG") {
-            const uploaded = isImage
-              ? await uploadToCloudinary(mediaUrl)
-              : null;
+            const uploaded = isImage && mediaUrl ? await uploadToCloudinary(mediaUrl) : null;
 
             await updateTicket(ticketId, {
               upi_image: uploaded || mediaUrl,
@@ -329,9 +324,7 @@ How can we help you today?
           }
 
           if (state === "DAM_IMG") {
-            const uploaded = isImage
-              ? await uploadToCloudinary(mediaUrl)
-              : null;
+            const uploaded = isImage && mediaUrl ? await uploadToCloudinary(mediaUrl) : null;
 
             await updateTicket(ticketId, {
               image: uploaded || mediaUrl,
@@ -351,9 +344,7 @@ How can we help you today?
           }
 
           if (state === "DAM_UPI_IMG") {
-            const uploaded = isImage
-              ? await uploadToCloudinary(mediaUrl)
-              : null;
+            const uploaded = isImage && mediaUrl ? await uploadToCloudinary(mediaUrl) : null;
 
             await updateTicket(ticketId, {
               upi_image: uploaded || mediaUrl,
