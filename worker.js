@@ -204,7 +204,6 @@ How can we help you today?
             return sendWhatsApp(from, "Send product image");
           }
 
-          // ✅ FIXED STEP1
           if (state === "STEP1") {
             if (!isImage || !mediaUrl) {
               return sendWhatsApp(from, "Please send product image");
@@ -220,9 +219,8 @@ How can we help you today?
             return sendWhatsApp(from, "Enter your UPI Transaction ID please ");
           }
 
-          // ✅ FIXED STEP2
           if (state === "STEP2") {
-            if (!text || text.trim() === "") {
+            if (!text || text.trim().length < 5) {
               return sendWhatsApp(from, "Enter your UPI Transaction ID please ");
             }
 
@@ -234,7 +232,6 @@ How can we help you today?
             return sendWhatsApp(from, "Send your UPI Transaction image please");
           }
 
-          // ✅ FIXED STEP3
           if (state === "STEP3") {
             if (!isImage || !mediaUrl) {
               return sendWhatsApp(from, "Please send UPI transaction image");
@@ -270,8 +267,12 @@ How can we help you today?
           }
 
           if (state === "EXP_UPI") {
+            if (!text || text.trim().length < 5) {
+              return sendWhatsApp(from, "Enter your UPI Transaction ID please");
+            }
+
             await updateTicket(ticketId, {
-              upi_id: text,
+              upi_id: text.trim(),
               state: "EXP_UPI_IMG",
             });
 
@@ -309,8 +310,12 @@ How can we help you today?
           }
 
           if (state === "PRICE_UPI") {
+            if (!text || text.trim().length < 5) {
+              return sendWhatsApp(from, "Enter your UPI Transaction ID");
+            }
+
             await updateTicket(ticketId, {
-              upi_id: text,
+              upi_id: text.trim(),
               state: "PRICE_UPI_IMG",
             });
 
@@ -348,8 +353,12 @@ How can we help you today?
           }
 
           if (state === "DAM_UPI") {
+            if (!text || text.trim().length < 5) {
+              return sendWhatsApp(from, "Enter your UPI transaction ID please");
+            }
+
             await updateTicket(ticketId, {
-              upi_id: text,
+              upi_id: text.trim(),
               state: "DAM_UPI_IMG",
             });
 
