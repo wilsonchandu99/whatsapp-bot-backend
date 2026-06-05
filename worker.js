@@ -17,8 +17,6 @@ cloudinary.config({
 
 async function uploadToCloudinary(url, type = "image") {
   try {
-    if (!url) return null;
-
     const result = await cloudinary.uploader.upload(url, {
       resource_type: type,
     });
@@ -35,58 +33,19 @@ function cleanText(text) {
   return (text || "").trim().toLowerCase();
 }
 
-/* ================= 🔥 FIX: WHATSAPP MEDIA FETCH ================= */
-async function fetchWhatsAppMedia(mediaId) {
-  try {
-    if (!mediaId) return null;
-
-    // Step 1: get media URL from WhatsApp
-    const meta = await axios.get(
-      `https://graph.facebook.com/v19.0/${mediaId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
-        },
-      }
-    );
-
-    const mediaUrl = meta.data.url;
-    if (!mediaUrl) return null;
-
-    // Step 2: download file
-    const file = await axios.get(mediaUrl, {
-      headers: {
-        Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
-      },
-      responseType: "arraybuffer",
-    });
-
-    const base64 = Buffer.from(file.data).toString("base64");
-
-    // Step 3: upload to cloudinary
-    const uploaded = await cloudinary.uploader.upload(
-      `data:image/jpeg;base64,${base64}`,
-      { resource_type: "image" }
-    );
-
-    return uploaded.secure_url;
-  } catch (err) {
-    console.log("Media Fetch Error:", err.message);
-    return null;
-  }
-}
-
-/* ================= MEDIA (ONLY FIXED) ================= */
+/* ================= MEDIA (FINAL SAFE FIX) ================= */
 function extractMedia(jobData) {
   return {
     isImage: Boolean(jobData?.isImage),
 
-    // 🔥 IMPORTANT FIX: WhatsApp sends image.id, not url
-    mediaId:
-      jobData?.mediaId ||
-      jobData?.imageId ||
-      jobData?.id ||
+    mediaUrl:
+      jobData?.mediaUrl ||
+      jobData?.url ||
+      jobData?.image ||
+      jobData?.file ||
       null,
+
+    mediaType: jobData?.mediaType || null,
   };
 }
 
@@ -145,7 +104,7 @@ const worker = new Worker(
         return;
       }
 
-      const { isImage, mediaId } = extractMedia(job.data);
+      const { isImage, mediaUrl } = extractMedia(job.data);
 
       const message = cleanText(text);
 
@@ -158,13 +117,15 @@ const worker = new Worker(
       let category = ticket.category;
       let subIssue = ticket.sub_issue;
 
-      /* ================= MENU ================= */
+      /* ================= FIX 1: FIRST MESSAGE POLITE GREETING ================= */
       if (!category) {
         await updateTicket(ticketId, { category: "MENU" });
 
         return sendWhatsApp(
           from,
-          `👋 Welcome
+          `👋 Welcome to Snackit!
+
+How can I help you today?
 
 1️⃣ Refund  
 2️⃣ Product  
@@ -172,11 +133,13 @@ const worker = new Worker(
         );
       }
 
+      /* ================= MENU ================= */
       if (category === "MENU") {
         if (message === "1") {
           await updateTicket(ticketId, { category: "REFUND", state: "MAIN" });
 
-          return sendWhatsApp(from,
+          return sendWhatsApp(
+            from,
             `Refund options:
 
 1 Product not dispensed  
@@ -218,7 +181,13 @@ const worker = new Worker(
 
             await updateTicket(ticketId, { state: "DONE", status: "done" });
 
-            return sendWhatsApp(from, `🏢 About Snackit...`);
+            return sendWhatsApp(
+              from,
+              `🏢 Thank you for your interest.
+
+We have received your brand enquiry.
+Our team will contact you soon.`
+            );
           }
 
           if (message === "2") {
@@ -230,7 +199,13 @@ const worker = new Worker(
 
             await updateTicket(ticketId, { state: "DONE", status: "done" });
 
-            return sendWhatsApp(from, `🤝 Collaboration accepted.`);
+            return sendWhatsApp(
+              from,
+              `🤝 Thank you!
+
+Your collaboration request has been submitted.
+We will get back to you shortly.`
+            );
           }
 
           return sendWhatsApp(from, "Reply 1 or 2");
@@ -262,7 +237,10 @@ const worker = new Worker(
 
           await updateTicket(ticketId, { state: "DONE", status: "done" });
 
-          return sendWhatsApp(from, "🙏 Thank you!");
+          return sendWhatsApp(
+            from,
+            "🙏 Thank you for your feedback! We appreciate your time."
+          );
         }
       }
 
@@ -290,11 +268,11 @@ const worker = new Worker(
         }
 
         if (state === "LOCATION") {
-          if (isImage && mediaId) {
-            const uploaded = await fetchWhatsAppMedia(mediaId);
+          if (isImage && mediaUrl) {
+            const uploaded = await uploadToCloudinary(mediaUrl, "image");
 
             await updateTicket(ticketId, {
-              image: uploaded || null,
+              image: uploaded || mediaUrl,
             });
           }
 
@@ -313,11 +291,10 @@ const worker = new Worker(
           if (state === "STEP1") {
             if (!isImage) return sendWhatsApp(from, "Send image");
 
-            if (isImage && mediaId) {
-              const uploaded = await fetchWhatsAppMedia(mediaId);
-
+            if (mediaUrl) {
+              const uploaded = await uploadToCloudinary(mediaUrl, "image");
               await updateTicket(ticketId, {
-                image: uploaded || null,
+                image: uploaded || mediaUrl,
               });
             }
 
@@ -337,20 +314,25 @@ const worker = new Worker(
           if (state === "STEP3") {
             if (!isImage) return sendWhatsApp(from, "Send image");
 
-            if (isImage && mediaId) {
-              const uploaded = await fetchWhatsAppMedia(mediaId);
-
+            if (mediaUrl) {
+              const uploaded = await uploadToCloudinary(mediaUrl, "image");
               await updateTicket(ticketId, {
-                upi_image: uploaded || null,
+                upi_image: uploaded || mediaUrl,
               });
             }
 
-            await updateTicket(ticketId, { state: "DONE" });
-            return sendWhatsApp(from, "✅ Done");
+            await updateTicket(ticketId, {
+              state: "DONE",
+              status: "done",
+            });
+
+            return sendWhatsApp(
+              from,
+              "✅ Ticket has been raised successfully.\n\nOur team will process your request soon."
+            );
           }
         }
       }
-
     } catch (err) {
       console.log("Worker Error:", err.message);
     }
