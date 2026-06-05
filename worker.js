@@ -152,7 +152,7 @@ const worker = new Worker(
           `ðŸ‘‹ Welcome to Snackit!
 How can we help you today?
 
-1ï¸âƒ£ Refund  
+1️⃣ Refund  
 2ï¸âƒ£ Product  
 3ï¸âƒ£ Feedback`
         );
