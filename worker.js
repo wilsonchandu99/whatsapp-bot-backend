@@ -404,7 +404,7 @@ How can we help you today?
         }
       }
 
-      /* ================= PRODUCT ================= */
+            /* ================= PRODUCT ================= */
       if (category === "PRODUCT") {
         if (state === "OPTIONS") {
           if (message === "1") {
@@ -416,7 +416,8 @@ How can we help you today?
             await updateTicket(ticketId, {
               main_issue: "Product",
               sub_issue: "Brand Enquiry",
-              state: "DONE",
+              state: "CLOSED",
+              status: "closed",
             });
 
             return sendWhatsApp(
@@ -434,7 +435,8 @@ How can we help you today?
             await updateTicket(ticketId, {
               main_issue: "Product",
               sub_issue: "Collaboration",
-              state: "DONE",
+              state: "CLOSED",
+              status: "closed",
             });
 
             return sendWhatsApp(
@@ -478,7 +480,8 @@ How can we help you today?
           }
 
           await updateTicket(ticketId, {
-            state: "DONE",
+            state: "CLOSED",
+            status: "closed",
           });
 
           return sendWhatsApp(from, "Thank you for your feedback.");
