@@ -185,17 +185,17 @@ app.post("/ticket/action", auth, async (req, res) => {
 
     switch (action) {
       case "REFUNDED":
-        message = "Refund processed. Please check your bank in 5–10 minutes.";
+        message = "Refund processed Now. Please check your bank in 5–10 minutes.";
         status = "refunded";
         break;
 
       case "AUTO_REFUNDED":
-        message = "Amount already credited. Please check your bank statement.";
+        message = "Amount was already credited. Please check your bank statement.";
         status = "auto_refunded";
         break;
 
       case "RESOLVED":
-        message = "Issue resolved. Thank you for contacting Snackit!";
+        message = "Your Issue was resolved. Thank you for contacting Snackit!";
         status = "resolved";
         break;
 

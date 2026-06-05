@@ -169,10 +169,10 @@ How can we help you today?
             from,
             `Refund options:
 
-1 Product not dispensed  
-2 Expired  
-3 Wrong price  
-4 Damaged`
+1 Product Not Dispensed  
+2 Received Expired Product
+3 Charged Higher MRP 
+4 Received Damaged Product`
           );
         }
 
@@ -201,10 +201,10 @@ How can we help you today?
       if (category === "REFUND") {
         if (state === "MAIN") {
           const map = {
-            "1": "Product not dispensed",
-            "2": "Expired",
-            "3": "Wrong price",
-            "4": "Damaged",
+            "1": "Product Not Dispensed",
+            "2": "Recieved Expired Product",
+            "3": "Charged Higher MRP",
+            "4": "Recieved Damaged Product",
           };
 
           if (!map[message]) return sendWhatsApp(from, "Choose 1-4");
@@ -217,17 +217,17 @@ How can we help you today?
             state: "LOCATION",
           });
 
-          return sendWhatsApp(from, "Enter machine location ALONG with the company name");
+          return sendWhatsApp(from, "Enter machine location along with the company name");
         }
 
         /* ================= PRODUCT NOT DISPENSED ================= */
-        if (subIssue === "Product not dispensed") {
+        if (subIssue === "Product Not Dispensed") {
           if (state === "LOCATION") {
             await updateTicket(ticketId, {
               location: text,
               state: "STEP1",
             });
-            return sendWhatsApp(from, "Send product image");
+            return sendWhatsApp(from, "Send the product image please");
           }
 
           if (state === "STEP1") {
@@ -260,7 +260,7 @@ How can we help you today?
 
           if (state === "STEP3") {
             if (!isImage || !mediaUrl) {
-              return sendWhatsApp(from, "Please send UPI transaction image");
+              return sendWhatsApp(from, "Please send your UPI transaction image");
             }
 
             const uploaded = await uploadToCloudinary(mediaUrl);
@@ -275,7 +275,7 @@ How can we help you today?
         }
 
         /* ================= EXPIRY ================= */
-        if (subIssue === "Expired") {
+        if (subIssue === "Recieved Expired Product") {
           if (state === "LOCATION") {
             await updateTicket(ticketId, { state: "EXP_IMG" });
             return sendWhatsApp(from, "Send the expiry image please");
@@ -318,10 +318,10 @@ How can we help you today?
         }
 
         /* ================= WRONG PRICE ================= */
-        if (subIssue === "Wrong price") {
+        if (subIssue === "Charged Higher MRP") {
           if (state === "LOCATION") {
             await updateTicket(ticketId, { state: "PRICE_IMG" });
-            return sendWhatsApp(from, "Send product price image please");
+            return sendWhatsApp(from, "Send your product price image please");
           }
 
           if (state === "PRICE_IMG") {
@@ -361,7 +361,7 @@ How can we help you today?
         }
 
         /* ================= DAMAGED ================= */
-        if (subIssue === "Damaged") {
+        if (subIssue === "Recieved Damaged Product") {
           if (state === "LOCATION") {
             await updateTicket(ticketId, { state: "DAM_IMG" });
             return sendWhatsApp(from, "Send the damaged product image please");
