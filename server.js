@@ -31,7 +31,7 @@ const ADMIN_USER = "admin";
 const ADMIN_PASS = "admin";
 
 /* =========================================================
-   🔐 AUTH MIDDLEWARE
+   Ã°Å¸â€Â AUTH MIDDLEWARE
 ========================================================= */
 function auth(req, res, next) {
   try {
@@ -59,7 +59,7 @@ function auth(req, res, next) {
 }
 
 /* =========================================================
-   🔑 LOGIN
+   Ã°Å¸â€â€˜ LOGIN
 ========================================================= */
 app.post("/login", (req, res) => {
   try {
@@ -76,7 +76,7 @@ app.post("/login", (req, res) => {
 });
 
 /* =========================================================
-   📄 GET REFUND TICKETS ONLY
+   Ã°Å¸â€œâ€ž GET REFUND TICKETS ONLY
 ========================================================= */
 app.get("/tickets", auth, async (req, res) => {
   try {
@@ -123,7 +123,7 @@ app.get("/tickets", auth, async (req, res) => {
 });
 
 /* =========================================================
-   📝 GET FEEDBACK
+   Ã°Å¸â€œÂ GET FEEDBACK
 ========================================================= */
 app.get("/feedback", auth, async (req, res) => {
   try {
@@ -141,7 +141,7 @@ app.get("/feedback", auth, async (req, res) => {
 });
 
 /* =========================================================
-   📦 GET PRODUCT LEADS
+   Ã°Å¸â€œÂ¦ GET PRODUCT LEADS
 ========================================================= */
 app.get("/product-leads", auth, async (req, res) => {
   try {
@@ -159,7 +159,7 @@ app.get("/product-leads", auth, async (req, res) => {
 });
 
 /* =========================================================
-   ⚙️ TICKET ACTION
+   Ã¢Å¡â„¢Ã¯Â¸Â TICKET ACTION
 ========================================================= */
 app.post("/ticket/action", auth, async (req, res) => {
   try {
@@ -184,7 +184,7 @@ app.post("/ticket/action", auth, async (req, res) => {
 
     switch (action) {
       case "REFUNDED":
-        message = "Refund processed Now. Please check your bank in 5–10 minutes.";
+        message = "Refund processed Now. Please check your bank in 5Ã¢â‚¬â€œ10 minutes.";
         status = "refunded";
         break;
 
@@ -223,7 +223,7 @@ app.post("/ticket/action", auth, async (req, res) => {
 });
 
 /* =========================================================
-   🗑️ CLOSE TICKET
+   Ã°Å¸â€”â€˜Ã¯Â¸Â CLOSE TICKET
 ========================================================= */
 app.delete("/tickets/:id", auth, async (req, res) => {
   try {
@@ -246,7 +246,7 @@ app.delete("/tickets/:id", auth, async (req, res) => {
 });
 
 /* =========================================================
-   📊 ANALYTICS (ONLY ADDED - NOTHING MODIFIED)
+   Ã°Å¸â€œÅ  ANALYTICS (ONLY ADDED - NOTHING MODIFIED)
 ========================================================= */
 
 /* Daily Product Not Dispensed */
@@ -266,13 +266,19 @@ app.get("/analytics/product-not-dispensed", auth, async (req, res) => {
   }
 });
 
-/* Issues by Category */
+/* Issues by Main Issue and Sub Issue */
 app.get("/analytics/category", auth, async (req, res) => {
   try {
     const result = await db.query(`
-      SELECT category, COUNT(*) as count
+      SELECT 
+        COALESCE(NULLIF(main_issue, ''), NULLIF(issue, ''), 'Unknown') as main_issue,
+        COALESCE(NULLIF(sub_issue, ''), 'No Sub Issue') as sub_issue,
+        COUNT(*) as count
       FROM tickets
-      GROUP BY category
+      GROUP BY 
+        COALESCE(NULLIF(main_issue, ''), NULLIF(issue, ''), 'Unknown'),
+        COALESCE(NULLIF(sub_issue, ''), 'No Sub Issue')
+      ORDER BY count DESC
     `);
     res.json(result.rows);
   } catch (err) {
@@ -298,7 +304,7 @@ app.get("/analytics/monthly", auth, async (req, res) => {
 });
 
 /* =========================================================
-   🔗 WEBHOOK VERIFY
+   Ã°Å¸â€â€” WEBHOOK VERIFY
 ========================================================= */
 app.get("/webhook", (req, res) => {
   const mode = req.query["hub.mode"];
@@ -306,16 +312,16 @@ app.get("/webhook", (req, res) => {
   const challenge = req.query["hub.challenge"];
 
   if (mode === "subscribe" && token === process.env.VERIFY_TOKEN) {
-    console.log("✅ Webhook verified");
+    console.log("Ã¢Å“â€¦ Webhook verified");
     return res.status(200).send(challenge);
   }
 
-  console.log("❌ Webhook verification failed");
+  console.log("Ã¢ÂÅ’ Webhook verification failed");
   res.sendStatus(403);
 });
 
 /* =========================================================
-   📩 WEBHOOK RECEIVE
+   Ã°Å¸â€œÂ© WEBHOOK RECEIVE
 ========================================================= */
 app.post("/webhook", async (req, res) => {
   try {
@@ -362,7 +368,7 @@ app.post("/webhook", async (req, res) => {
       }
     }
 
-    console.log("📩 Incoming:", { from, text, type, isImage, mediaUrl });
+    console.log("Ã°Å¸â€œÂ© Incoming:", { from, text, type, isImage, mediaUrl });
 
     const ticket = await getOrCreateTicket(from);
 
@@ -378,23 +384,23 @@ app.post("/webhook", async (req, res) => {
 
     res.sendStatus(200);
   } catch (err) {
-    console.log("❌ WEBHOOK ERROR:", err.message);
+    console.log("Ã¢ÂÅ’ WEBHOOK ERROR:", err.message);
     res.sendStatus(200);
   }
 });
 
 /* =========================================================
-   ❤️ HEALTH CHECK
+   Ã¢ÂÂ¤Ã¯Â¸Â HEALTH CHECK
 ========================================================= */
 app.get("/", (req, res) => {
   res.send("Snackit backend running");
 });
 
 /* =========================================================
-   🚀 START SERVER
+   Ã°Å¸Å¡â‚¬ START SERVER
 ========================================================= */
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`Ã°Å¸Å¡â‚¬ Server running on port ${PORT}`);
 });
